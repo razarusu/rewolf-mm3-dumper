@@ -1,15 +1,20 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 #include <memory>
-#include <intrin.h>
+#include "mintrin.h"
 #include <unordered_map>
 #include <string>
-#include <direct.h>
-#include <Windows.h>
+//#include <direct.h>
+#include <dirent.h>
+//#include <Windows.h>
 #include <algorithm>
 #include "lzhuf.h"
 #include "mm3filelist.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
 
 void decryptHeader(uint8_t* buf, size_t size)
 {
@@ -134,6 +139,11 @@ uint8_t* readFile(const char* path, size_t& fSize)
 	return buf;
 }
 
+void _mkdir(char* filename)
+{
+	mkdir(filename, -1);
+}
+
 void dump(char* mm3ccPath)
 {
 	initFNames();
@@ -185,28 +195,53 @@ void dump(char* mm3ccPath)
 	}
 }
 
+// Arguments seem arbitrary but it's okay
+size_t fileSize (char *path, char *filename)
+{
+	FILE *f = 0;
+	// Ugly hack to concat C strings
+	f = fopen((std::string(path)+std::string(filename)).c_str(), "r");
+
+	fseek(f, 0, SEEK_END);
+	size_t size = ftell(f);
+	fclose(f);	
+
+	return size;
+}
+
 bool createFileList(char* path, std::vector<std::pair<std::string, size_t>>& fileList)
 {
-	WIN32_FIND_DATA wfd;
-	std::string sp = path;
-	sp += "\\*";
-	HANDLE hFind = FindFirstFile(sp.c_str(), &wfd);
-	if (INVALID_HANDLE_VALUE == hFind)
+	//WIN32_FIND_DATA wfd;
+	//std::string sp = path;
+	//sp += "\\*";
+	//HANDLE hFind = FindFirstFile(sp.c_str(), &wfd);
+	/*if (INVALID_HANDLE_VALUE == hFind)
 	{
 		printf("Can't find any file: %s\n", path);
 		return false;
-	}
+	}*/
 
-	do
+	DIR *d;
+	struct dirent *dir;
+	d = opendir(path);
+
+	//do
+	while ((dir = readdir(d)) != NULL);
 	{
-		if (!(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+/*		if (!(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		{
 			fileList.emplace_back(std::pair<std::string, size_t>(wfd.cFileName, wfd.nFileSizeLow));
 		}
+	}*/
+		fileList.emplace_back(std::pair<std::string, size_t>(std::string(dir->d_name), fileSize(path, dir->d_name)));
 	}
-	while (FindNextFile(hFind, &wfd) != 0);
 
-	FindClose(hFind);
+	
+	//while (FindNextFile(hFind, &wfd) != 0);
+
+	//FindClose(hFind);
+
+	closedir(d);
 	return true;
 }
 

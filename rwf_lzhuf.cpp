@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <intrin.h>
+#include "mintrin.h"
 #include <cstring>
 #include <cstdio>
 
